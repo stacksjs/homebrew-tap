@@ -1,26 +1,26 @@
 class Stacks < Formula
   desc "Meet Buddy. The Stacks runtime."
   homepage "https://github.com/stacksjs/stacks"
-  version "0.74.15"
+  version "0.74.16"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/stacksjs/stacks/releases/download/v#{version}/buddy-darwin-arm64.zip"
-      sha256 "8415ad811ca9ad182821edd9b43e3c38443ddfb6b0bc5f1cf8b2dddb50fe865b"
+      sha256 "d761bf4bf00a8c5ed375e0fd3e395b9d0e449a6bcff8f7f8439fd7196f33be18"
     else
       url "https://github.com/stacksjs/stacks/releases/download/v#{version}/buddy-darwin-x64.zip"
-      sha256 "bdc30b1baa2be19b8f2a9cec69953881bf6b5b40dc55dc6c11dae8c643788313"
+      sha256 "0f2e5a56e025ad853ca57a4a5773e914595eb3539292e09933eb70106889b010"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
       url "https://github.com/stacksjs/stacks/releases/download/v#{version}/buddy-linux-arm64.zip"
-      sha256 "407bcaa995103ad3e78605a95919a409cb92b354943cf199f4c8d4d08a6e0915"
+      sha256 "612f9abdd07e9e469516ec6333ec250ac2f5b25f6b8a195248d103a3f97c1e57"
     else
       url "https://github.com/stacksjs/stacks/releases/download/v#{version}/buddy-linux-x64.zip"
-      sha256 "e40520661ff00b736183e4f36363e34bca405300701e4b0845550bcaf5a4eb62"
+      sha256 "803891be6cfc2085a05a14785bd44cd2bcdc1f1db85a77628ba28dde15cebea4"
     end
   end
 
