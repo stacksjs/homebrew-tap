@@ -1,0 +1,103 @@
+name: Qualify and deliver DTSX
+
+on:
+  push:
+    paths: ['scripts/**', '.github/workflows/dtsx.yml']
+  pull_request:
+    paths: ['scripts/**', '.github/workflows/dtsx.yml']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Qualified stable DTSX release tag to deliver
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - run: node --test scripts/prepare-dtsx.test.mjs
+
+  prepare:
+    if: github.event_name == 'workflow_dispatch'
+    needs: source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Require exact-source CI, SDK, benchmark and release qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node scripts/prepare-dtsx.mjs --tag "$RELEASE_TAG" --out .dtsx-candidate
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: dtsx-candidate
+          path: .dtsx-candidate
+          include-hidden-files: true
+          if-no-files-found: error
+
+  homebrew:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: Homebrew/actions/setup-homebrew@d482da0e602890d3160aade42e72c8556103bf04 # 2026.10.26.1
+        with:
+          stable: true
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: dtsx-candidate
+          path: .dtsx-candidate
+      - name: Install and exercise the candidate through the real tap
+        run: |
+          brew tap stacksjs/tap
+          cp .dtsx-candidate/Formula/dtsx.rb "$(brew --repository stacksjs/tap)/Formula/dtsx.rb"
+          brew install --formula stacksjs/tap/dtsx
+          brew test stacksjs/tap/dtsx
+          brew audit --strict stacksjs/tap/dtsx
+
+  deliver:
+    needs: [prepare, homebrew]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: dtsx-formula-delivery
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: dtsx-candidate
+          path: .dtsx-candidate
+      - name: Commit the qualified native formula and delivery receipt
+        env:
+          DELIVERY_RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p Formula releases
+          node --input-type=module <<'JS'
+          import { existsSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs'
+          import { assertUpgrade } from './scripts/prepare-dtsx.mjs'
+          const proof = JSON.parse(readFileSync('.dtsx-candidate/qualification.json', 'utf8'))
+          assertUpgrade(proof.tag, existsSync('Formula/dtsx.rb') ? readFileSync('Formula/dtsx.rb', 'utf8') : undefined)
+          copyFileSync('.dtsx-candidate/Formula/dtsx.rb', 'Formula/dtsx.rb')
+          proof.homebrewQualification = { run: process.env.DELIVERY_RUN, platforms: ['ubuntu-latest', 'macos-latest'], passed: true }
+          writeFileSync(`releases/dtsx-${proof.tag}.json`, JSON.stringify(proof, null, 2) + '\n')
+          JS
+          git config user.name 'Chris Breuer'
+          git config user.email 'chris@stacksjs.com'
+          git add Formula/dtsx.rb releases/dtsx-*.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "feat: deliver qualified DTSX native CLI through Homebrew"
+          git push origin HEAD:main
