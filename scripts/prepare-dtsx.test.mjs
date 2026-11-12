@@ -48,6 +48,8 @@ test('renders a native CLI formula with stdin and project contracts', () => {
   assert.match(formula, /pipe_output/)
   assert.match(formula, /--project/)
   assert.match(formula, /\| undefined/)
+  assert.doesNotMatch(formula, /^\s*version "/m, 'Homebrew derives the stable version from the immutable release URLs')
+  for (const platform of platforms) assert(formula.includes(`url "https://github.com/stacksjs/dtsx/releases/download/v1.2.3/zig-dtsx-${platform}.zip"`))
   assert.doesNotMatch(formula, /depends_on "bun"|install_symlink/)
   assert.throws(() => renderFormula('v1.2.3"; unsafe', {}))
 })
@@ -58,3 +60,12 @@ test('renders a native CLI formula with stdin and project contracts', () => {
   for (const tag of ['v1.2.3', 'v1.2.2', 'v0.99.99']) assert.throws(() => assertUpgrade(tag, '  version "1.2.3"'))
   assert.throws(() => assertUpgrade('v1.2.4', 'version "1.2.3"\nversion "1.0.0"'))
  })
+
+test('upgrade protection reads all pinned native URLs without an explicit version', () => {
+  const formula = platforms.map(platform => `  url "https://github.com/stacksjs/dtsx/releases/download/v1.2.3/zig-dtsx-${platform}.zip"`).join('\n')
+  assert.doesNotThrow(() => assertUpgrade('v1.2.4', formula))
+  for (const tag of ['v1.2.3', 'v1.2.2', 'v0.99.99']) assert.throws(() => assertUpgrade(tag, formula))
+  assert.throws(() => assertUpgrade('v1.2.4', formula.replace('v1.2.3', 'v1.1.3')))
+  assert.throws(() => assertUpgrade('v1.2.4', formula.split('\n').slice(1).join('\n')))
+  assert.throws(() => assertUpgrade('v1.2.4', `${formula}\n  version "1.1.3"`))
+})

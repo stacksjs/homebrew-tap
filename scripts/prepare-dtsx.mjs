@@ -48,9 +48,17 @@ export function assertUpgrade(tag, previous) {
   assert.match(tag, /^v\d+\.\d+\.\d+$/)
   if (previous === undefined) return
   const versions = [...previous.matchAll(/^\s*version "(\d+\.\d+\.\d+)"$/gm)]
-  assert.equal(versions.length, 1, 'Existing formula must have one stable version')
+  const urls = [...previous.matchAll(/^\s*url "https:\/\/github\.com\/stacksjs\/dtsx\/releases\/download\/v(\d+\.\d+\.\d+)\/zig-dtsx-(darwin-arm64|darwin-x64|linux-arm64|linux-x64)\.zip"$/gm)]
+  assert(versions.length <= 1, 'Existing formula must not declare multiple versions')
+  if (urls.length > 0) {
+    assert.equal(urls.length, platforms.length, 'All native platforms must have pinned URLs')
+    assert.equal(new Set(urls.map(match => match[2])).size, platforms.length, 'Each native platform must appear once')
+  }
+  const stable = new Set([...versions.map(match => match[1]), ...urls.map(match => match[1])])
+  assert.equal(stable.size, 1, 'Existing formula must have one consistent stable version')
+  assert(versions.length === 1 || urls.length === platforms.length)
   const requested = tag.slice(1).split('.').map(BigInt)
-  const installed = versions[0][1].split('.').map(BigInt)
+  const installed = [...stable][0].split('.').map(BigInt)
   const index = requested.findIndex((part, i) => part !== installed[i])
   assert(index >= 0 && requested[index] > installed[index], 'Formula delivery must advance its current version')
 }
@@ -83,25 +91,24 @@ export function renderFormula(tag, digests) {
   return `class Dtsx < Formula
   desc "Generate TypeScript declarations with the native DTSX CLI"
   homepage "https://github.com/stacksjs/dtsx"
-  version "${tag.slice(1)}"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/stacksjs/dtsx/releases/download/v#{version}/zig-dtsx-darwin-arm64.zip"
+      url "https://github.com/stacksjs/dtsx/releases/download/${tag}/zig-dtsx-darwin-arm64.zip"
       sha256 "${digests['darwin-arm64']}"
     else
-      url "https://github.com/stacksjs/dtsx/releases/download/v#{version}/zig-dtsx-darwin-x64.zip"
+      url "https://github.com/stacksjs/dtsx/releases/download/${tag}/zig-dtsx-darwin-x64.zip"
       sha256 "${digests['darwin-x64']}"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/stacksjs/dtsx/releases/download/v#{version}/zig-dtsx-linux-arm64.zip"
+      url "https://github.com/stacksjs/dtsx/releases/download/${tag}/zig-dtsx-linux-arm64.zip"
       sha256 "${digests['linux-arm64']}"
     else
-      url "https://github.com/stacksjs/dtsx/releases/download/v#{version}/zig-dtsx-linux-x64.zip"
+      url "https://github.com/stacksjs/dtsx/releases/download/${tag}/zig-dtsx-linux-x64.zip"
       sha256 "${digests['linux-x64']}"
     end
   end
