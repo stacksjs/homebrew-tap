@@ -1,0 +1,40 @@
+{
+  "repository": "stacksjs/dtsx",
+  "tag": "v0.11.52",
+  "commit": "9d585ef375f33907d352ad8ff076017a95fdc0b6",
+  "preparedAt": "2026-11-12T10:48:48.175Z",
+  "workflows": [
+    {
+      "id": 43162611920,
+      "attempt": 1,
+      "url": "https://github.com/stacksjs/dtsx/actions/runs/43162611920",
+      "headSha": "9d585ef375f33907d352ad8ff076017a95fdc0b6"
+    },
+    {
+      "id": 43162611977,
+      "attempt": 1,
+      "url": "https://github.com/stacksjs/dtsx/actions/runs/43162611977",
+      "headSha": "9d585ef375f33907d352ad8ff076017a95fdc0b6"
+    },
+    {
+      "id": 43162611861,
+      "attempt": 1,
+      "url": "https://github.com/stacksjs/dtsx/actions/runs/43162611861",
+      "headSha": "9d585ef375f33907d352ad8ff076017a95fdc0b6"
+    }
+  ],
+  "digests": {
+    "darwin-arm64": "76b1e7a07efa1649e0835529dd353f3b083c9f99583c89e03a89bd215133db2b",
+    "darwin-x64": "be944248c491bc088ac326e2d1dcbef71f22954ae3b5433d7290ded27ce615c7",
+    "linux-arm64": "f01d78f32531b79009c3328864004615f69c442ed16c8b76250c88615403ab5f",
+    "linux-x64": "a9b3f1ff295c3f31bf8a0aa00cfa0300c0cadfbed41bc3b4cf2c2fc91ad3b55a"
+  },
+  "homebrewQualification": {
+    "run": "https://github.com/stacksjs/homebrew-tap/actions/runs/43203579956",
+    "platforms": [
+      "ubuntu-latest",
+      "macos-latest"
+    ],
+    "passed": true
+  }
+}
